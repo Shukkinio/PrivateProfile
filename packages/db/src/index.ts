@@ -1,27 +1,36 @@
 import { PrismaClient } from '@prisma/client';
-import { existsSync } from 'fs';
-import { execSync } from 'child_process';
-import { join } from 'path';
+import { copyFileSync, existsSync, mkdirSync } from 'fs';
+import { join, dirname } from 'path';
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-function initDb(): PrismaClient {
-  const dbUrl = process.env.DATABASE_URL || 'file:./dev.db';
-  const dbPath = dbUrl.replace('file:', '');
+function findSeedDb(): string | null {
+  const candidates = [
+    join(__dirname, '..', 'prisma', 'dev.db'),
+    join(process.cwd(), '..', '..', 'packages', 'db', 'prisma', 'dev.db'),
+    join(process.cwd(), 'packages', 'db', 'prisma', 'dev.db'),
+  ];
+  for (const p of candidates) {
+    if (existsSync(p)) return p;
+  }
+  return null;
+}
 
-  if (!existsSync(dbPath)) {
-    const schemaPath = join(__dirname, '..', 'prisma', 'schema.prisma');
-    try {
-      execSync(`npx prisma db push --schema="${schemaPath}" --skip-generate --accept-data-loss`, {
-        env: { ...process.env, DATABASE_URL: dbUrl },
-        stdio: 'pipe',
-        timeout: 30000,
-      });
-    } catch {
-      // DB might already exist in another location, try connecting anyway
+function initDb(): PrismaClient {
+  let dbUrl = process.env.DATABASE_URL || 'file:./dev.db';
+
+  if (process.env.VERCEL) {
+    const tmpPath = '/tmp/dev.db';
+    if (!existsSync(tmpPath)) {
+      const seed = findSeedDb();
+      if (seed) {
+        mkdirSync(dirname(tmpPath), { recursive: true });
+        copyFileSync(seed, tmpPath);
+      }
     }
+    dbUrl = `file:${tmpPath}`;
   }
 
   const prisma = new PrismaClient({ datasources: { db: { url: dbUrl } } });
