@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 
@@ -12,7 +12,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = useRef<ReturnType<typeof createClient>>();
+  useEffect(() => { supabase.current = createClient(); }, []);
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,7 +21,7 @@ export default function LoginPage() {
     setError('');
 
     if (mode === 'register') {
-      const { error: signUpError } = await supabase.auth.signUp({
+      const { error: signUpError } = await supabase.current!.auth.signUp({
         email,
         password,
         options: { data: { username: username || email.split('@')[0] } },
@@ -32,7 +33,7 @@ export default function LoginPage() {
         setMode('login');
       }
     } else {
-      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      const { error: signInError } = await supabase.current!.auth.signInWithPassword({ email, password });
       if (signInError) {
         setError(signInError.message === 'Invalid login credentials'
           ? 'Invalid credentials. Need an account? Switch to Sign up.'
@@ -48,7 +49,7 @@ export default function LoginPage() {
   const handleDiscordLogin = async () => {
     setLoading(true);
     setError('');
-    const { error } = await supabase.auth.signInWithOAuth({
+    const { error } = await supabase.current!.auth.signInWithOAuth({
       provider: 'discord',
       options: { redirectTo: `${location.origin}/api/auth/discord/callback` },
     });
