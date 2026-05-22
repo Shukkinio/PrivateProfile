@@ -27,9 +27,9 @@ export async function POST(request: Request) {
     const track = await prisma.track.create({
       data: {
         userId: user.id,
-        title: body.title,
+        title: body.title || 'Track',
         artist: body.artist || '',
-        url: body.url,
+        url: body.url || '',
         duration: body.duration || 0,
         order: count,
       },
@@ -49,15 +49,9 @@ export async function DELETE(request: Request) {
     const user = await requireAuth();
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
+    if (!id) return NextResponse.json({ error: 'Track ID required' }, { status: 400 });
 
-    if (!id) {
-      return NextResponse.json({ error: 'Track ID required' }, { status: 400 });
-    }
-
-    await prisma.track.deleteMany({
-      where: { id, userId: user.id },
-    });
-
+    await prisma.track.deleteMany({ where: { id, userId: user.id } });
     return NextResponse.json({ success: true });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Failed';

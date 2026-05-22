@@ -41,10 +41,30 @@ model Profile {
   introText String?
   customCursor Boolean @default(false)
   cursorImage String?
+  cursorSize Int @default(32)
   discordPresence Boolean @default(true)
   musicWidget Boolean @default(false)
   bgVideoUrl String?
+  avatarUrl String?
+  bgColor  String   @default("#0a0a0f")
+  musicUrl String?
+  musicTitle String?
+  musicArtist String?
   bgEffects  String   @default("[]")
+  bgEffectType String?
+  usernameEffectType String?
+  startMessage String @default("")
+  profileOpacity Int @default(100)
+  profileBlur Int @default(0)
+  glowUsername Boolean @default(true)
+  glowSocials Boolean @default(true)
+  glowBadges Boolean @default(true)
+  monochromeIcons Boolean @default(false)
+  volumeControl Boolean @default(true)
+  useDiscordAvatar Boolean @default(false)
+  discordAvatarDecoration Boolean @default(false)
+  swapBoxColors Boolean @default(false)
+  badges String @default("[]")
   effectIntensity Int  @default(50)
   blurAmount Int      @default(0)
   brightness Int      @default(100)
@@ -58,6 +78,10 @@ model Profile {
   embedColor String   @default("#c4b5fd")
   animatedTitle Boolean @default(false)
   accentColor String @default("#c4b5fd")
+  startMessageFont String @default("")
+  glowStyle String @default("text-shadow")
+  usernameGlowStyle String @default("text-shadow")
+  startMessageGlow Boolean @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -121,13 +145,14 @@ model View {
   id        String   @id @default(cuid())
   profileId String
   ipHash    String
-  fingerprint String?
+  fingerprint String  @default("")
   userAgent String?
   country   String?
   createdAt DateTime @default(now())
   profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 
-  @@index([profileId, ipHash, createdAt])
+  @@unique([profileId, ipHash, fingerprint])
+  @@index([profileId, createdAt])
 }
 
 model AnalyticsEvent {

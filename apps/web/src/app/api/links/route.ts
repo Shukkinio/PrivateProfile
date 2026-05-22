@@ -26,16 +26,19 @@ export async function PUT(request: Request) {
     await prisma.link.deleteMany({ where: { userId: user.id } });
 
     if (body.links && Array.isArray(body.links)) {
-      await prisma.link.createMany({
-        data: body.links.map((l: { platform: string; url: string; label: string; hidden: boolean }, i: number) => ({
-          userId: user.id,
-          platform: l.platform,
-          url: l.url,
-          label: l.label,
-          hidden: l.hidden ?? false,
-          order: i,
-        })),
-      });
+      for (let i = 0; i < body.links.length; i++) {
+        const l = body.links[i];
+        await prisma.link.create({
+          data: {
+            userId: user.id,
+            platform: l.platform || 'custom',
+            url: l.url || '',
+            label: l.label || 'Link',
+            hidden: l.hidden ?? false,
+            order: i,
+          },
+        });
+      }
     }
 
     const links = await prisma.link.findMany({
