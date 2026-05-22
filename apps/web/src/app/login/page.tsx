@@ -5,33 +5,55 @@ import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
+  const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [username, setUsername] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
   const supabase = createClient();
 
-  const handleEmailLogin = async (e: React.FormEvent) => {
+  const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      setError(error.message);
+    if (mode === 'register') {
+      const { error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { username: username || email.split('@')[0] } },
+      });
+      if (signUpError) {
+        setError(signUpError.message);
+      } else {
+        setError('');
+        setMode('login');
+      }
     } else {
-      router.push('/dashboard');
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      if (signInError) {
+        setError(signInError.message === 'Invalid login credentials'
+          ? 'Invalid credentials. Need an account? Switch to Sign up.'
+          : signInError.message
+        );
+      } else {
+        router.push('/dashboard');
+      }
     }
     setLoading(false);
   };
 
   const handleDiscordLogin = async () => {
+    setLoading(true);
+    setError('');
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'discord',
       options: { redirectTo: `${location.origin}/api/auth/discord/callback` },
     });
     if (error) setError(error.message);
+    setLoading(false);
   };
 
   return (
@@ -41,7 +63,9 @@ export default function LoginPage() {
           <div className="text-[13px] font-bold tracking-[0.15em] uppercase text-[#c4b5fd]">
             ProfileOS
           </div>
-          <p className="mt-1 font-mono text-[10px] text-white/30">sign in to your control panel</p>
+          <p className="mt-1 font-mono text-[10px] text-white/30">
+            {mode === 'login' ? 'sign in to your control panel' : 'create your account'}
+          </p>
         </div>
 
         {error && (
@@ -50,7 +74,35 @@ export default function LoginPage() {
           </div>
         )}
 
-        <form onSubmit={handleEmailLogin} className="space-y-3">
+        <div className="flex rounded-lg border border-white/10 p-0.5">
+          <button
+            onClick={() => setMode('login')}
+            className={`flex-1 rounded-md py-1.5 text-xs font-semibold transition-all ${
+              mode === 'login' ? 'bg-[#c4b5fd]/10 text-[#c4b5fd]' : 'text-white/40 hover:text-white/70'
+            }`}
+          >
+            Sign In
+          </button>
+          <button
+            onClick={() => setMode('register')}
+            className={`flex-1 rounded-md py-1.5 text-xs font-semibold transition-all ${
+              mode === 'register' ? 'bg-[#c4b5fd]/10 text-[#c4b5fd]' : 'text-white/40 hover:text-white/70'
+            }`}
+          >
+            Sign Up
+          </button>
+        </div>
+
+        <form onSubmit={handleEmailAuth} className="space-y-3">
+          {mode === 'register' && (
+            <input
+              type="text"
+              placeholder="Username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="h-9 w-full rounded-lg border border-white/10 bg-white/5 px-3 text-sm text-white/80 placeholder:text-white/25 focus:border-[#c4b5fd]/40 focus:outline-none focus:ring-1 focus:ring-[#c4b5fd]/20"
+            />
+          )}
           <input
             type="email"
             placeholder="Email"
@@ -72,7 +124,7 @@ export default function LoginPage() {
             disabled={loading}
             className="flex h-9 w-full items-center justify-center rounded-lg border border-[#c4b5fd] bg-[#c4b5fd] text-sm font-semibold text-[#1a0a3c] transition-all hover:bg-[#d8ccff] disabled:opacity-50"
           >
-            {loading ? 'Signing in...' : 'Sign in'}
+            {loading ? 'Processing...' : mode === 'login' ? 'Sign in' : 'Create account'}
           </button>
         </form>
 
@@ -87,9 +139,10 @@ export default function LoginPage() {
 
         <button
           onClick={handleDiscordLogin}
-          className="flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 text-sm font-semibold text-white/60 transition-all hover:bg-white/10 hover:text-white"
+          disabled={loading}
+          className="flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 text-sm font-semibold text-white/60 transition-all hover:bg-white/10 hover:text-white disabled:opacity-50"
         >
-          <span>Continue with Discord</span>
+          Continue with Discord
         </button>
       </div>
     </div>

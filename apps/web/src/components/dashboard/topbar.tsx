@@ -2,6 +2,8 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { useProfile } from '@/hooks/use-profile';
+import { toast } from 'sonner';
 
 const sectionTitles: Record<string, { title: string; sub: string }> = {
   dashboard: { title: 'Dashboard', sub: 'Manage your profile settings and view stats' },
@@ -28,6 +30,16 @@ export function Topbar() {
   const router = useRouter();
   const section = pathname.replace('/dashboard', '').replace('/', '') || 'dashboard';
   const info = sectionTitles[section] || sectionTitles.dashboard;
+  const { saving, publish } = useProfile();
+
+  const handlePublish = async () => {
+    try {
+      await publish();
+      toast.success('Profile published!', { description: 'Your changes are now live.' });
+    } catch {
+      toast.error('Publish failed');
+    }
+  };
 
   const handleLogout = async () => {
     const supabase = createClient();
@@ -46,10 +58,14 @@ export function Topbar() {
           onClick={() => window.open('/', '_blank')}
           className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3.5 py-[7px] text-xs font-semibold text-white/60 transition-all hover:bg-white/10 hover:text-white"
         >
-          <span>👁</span> Preview
+          👁 Preview
         </button>
-        <button className="flex items-center gap-1.5 rounded-lg border border-[#c4b5fd] bg-[#c4b5fd] px-3.5 py-[7px] text-xs font-semibold text-[#1a0a3c] transition-all hover:bg-[#d8ccff]">
-          <span>🚀</span> Publish
+        <button
+          onClick={handlePublish}
+          disabled={saving}
+          className="flex items-center gap-1.5 rounded-lg border border-[#c4b5fd] bg-[#c4b5fd] px-3.5 py-[7px] text-xs font-semibold text-[#1a0a3c] transition-all hover:bg-[#d8ccff] disabled:opacity-50"
+        >
+          {saving ? 'Saving...' : '🚀 Publish'}
         </button>
         <button
           onClick={handleLogout}
