@@ -8,12 +8,24 @@ const globalForPrisma = globalThis as unknown as {
 
 function findSeedDb(): string | null {
   const candidates = [
+    // relative to compiled __dirname (varies on Vercel)
     join(__dirname, '..', 'prisma', 'dev.db'),
-    join(process.cwd(), '..', '..', 'packages', 'db', 'prisma', 'dev.db'),
+    join(__dirname, '..', '..', '..', 'packages', 'db', 'prisma', 'dev.db'),
+    join(__dirname, '..', '..', '..', '..', '..', 'packages', 'db', 'prisma', 'dev.db'),
+    // relative to cwd
+    join(process.cwd(), 'dev.db'),
+    join(process.cwd(), 'prisma', 'dev.db'),
+    // full repo paths (Vercel deploys monorepo root as cwd for some runtimes)
     join(process.cwd(), 'packages', 'db', 'prisma', 'dev.db'),
+    join(process.cwd(), '..', 'packages', 'db', 'prisma', 'dev.db'),
+    join(process.cwd(), '..', '..', 'packages', 'db', 'prisma', 'dev.db'),
   ];
   for (const p of candidates) {
-    if (existsSync(p)) return p;
+    try {
+      if (existsSync(p)) return p;
+    } catch {
+      continue;
+    }
   }
   return null;
 }
