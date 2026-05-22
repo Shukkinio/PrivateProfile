@@ -57,16 +57,27 @@ export async function saveUpload(
   const buffer = Buffer.from(await file.arrayBuffer());
   const ext = getExtensionFromMime(file.type);
   const filename = `${uid()}.${ext}`;
-  const dir = join(process.cwd(), 'public', 'uploads', subfolder);
 
+  if (process.env.VERCEL) {
+    const dir = join('/tmp', 'uploads', subfolder);
+    await mkdir(dir, { recursive: true });
+    const filePath = join(dir, filename);
+    await writeFile(filePath, buffer);
+    return {
+      url: `/api/uploads/${subfolder}/${filename}`,
+      path: filePath,
+      mimeType: file.type,
+      size: file.size,
+      originalName: file.name,
+    };
+  }
+
+  const dir = join(process.cwd(), 'public', 'uploads', subfolder);
   await mkdir(dir, { recursive: true });
   const filePath = join(dir, filename);
   await writeFile(filePath, buffer);
-
-  const url = `/uploads/${subfolder}/${filename}`;
-
   return {
-    url,
+    url: `/uploads/${subfolder}/${filename}`,
     path: filePath,
     mimeType: file.type,
     size: file.size,
