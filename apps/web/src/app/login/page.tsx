@@ -12,7 +12,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
-  const supabase = useRef<ReturnType<typeof createClient>>();
+  const supabase = useRef<ReturnType<typeof createClient> | null>(null);
   useEffect(() => { supabase.current = createClient(); }, []);
 
   const handleEmailAuth = async (e: React.FormEvent) => {
